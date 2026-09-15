@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datapond-build"
+version = "0.1.0"
+description = "Shared build tooling for datapond databases: DuckDB session tuning, data dictionary, HuggingFace publishing, validation"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Ian Nason" }]
+dependencies = [
+    "duckdb>=1.0",
+    "requests",
+    "huggingface_hub>=0.20",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.urls]
+Repository = "https://github.com/datapond-db/datapond-build"
+Registry = "https://github.com/datapond-db/registry"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/datapond_build"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
