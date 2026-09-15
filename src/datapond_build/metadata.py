@@ -94,7 +94,7 @@ def ensure_metadata(con: duckdb.DuckDBPyConnection, *, descriptions: Mapping[str
 
 def build_columns_table(con: duckdb.DuckDBPyConnection, *, join_hints: Mapping[str, str] | None = None,
                         tables: Iterable[str] | None = None, example_len: int = 80,
-                        quiet: bool = False) -> int:
+                        quiet: bool = False, column_batch: int = 64) -> int:
     """(Re)build ``_columns`` for every data table. Returns the number of rows.
 
     ``join_hints`` maps a column name to a hint applied wherever that column
@@ -123,17 +123,26 @@ def build_columns_table(con: duckdb.DuckDBPyConnection, *, join_hints: Mapping[s
         if "source_file" in meta_cols:
             r = con.execute("SELECT source_file FROM _metadata WHERE table_name = ?", [t]).fetchone()
             source_file = r[0] if r else None
-        aggs = ["COUNT(*)"]
-        for c, _ in cols:
-            qc = _q(c)
-            aggs.append(f"COUNT(*) FILTER (WHERE {qc} IS NULL)")
-            aggs.append(f"MIN(CAST({qc} AS VARCHAR)) FILTER (WHERE {qc} IS NOT NULL)")
-        try:
-            stats = con.execute(f"SELECT {', '.join(aggs)} FROM {_q(t)}").fetchone()
-        except Exception as e:  # noqa: BLE001 - keep going with empty stats
-            print(f"  WARNING: column stats for {t}: {e}")
-            stats = (0,) + (None, None) * len(cols)
-        total = stats[0] or 0
+        # Batches of columns per aggregate scan: a 500-column table in one query holds a
+        # thousand aggregate states plus per-row VARCHAR casts outside DuckDB's memory
+        # accounting (7 GB RSS on ussc.sentences under a 3 GB memory_limit).
+        stats: list = []
+        total = 0
+        for k in range(0, len(cols), column_batch):
+            batch = cols[k:k + column_batch]
+            aggs = ["COUNT(*)"]
+            for c, _ in batch:
+                qc = _q(c)
+                aggs.append(f"COUNT(*) FILTER (WHERE {qc} IS NULL)")
+                aggs.append(f"MIN(CAST({qc} AS VARCHAR)) FILTER (WHERE {qc} IS NOT NULL)")
+            try:
+                part = con.execute(f"SELECT {', '.join(aggs)} FROM {_q(t)}").fetchone()
+            except Exception as e:  # noqa: BLE001 - keep going with empty stats
+                print(f"  WARNING: column stats for {t}: {e}")
+                part = (0,) + (None, None) * len(batch)
+            total = part[0] or 0
+            stats.extend(part[1:])
+        stats = (total, *stats)
         for i, (c, dt) in enumerate(cols):
             nulls, example = stats[1 + 2 * i], stats[2 + 2 * i]
             null_pct = round(100.0 * nulls / total, 1) if total and nulls is not None else None
