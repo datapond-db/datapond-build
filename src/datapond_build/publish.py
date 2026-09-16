@@ -6,7 +6,7 @@ text now lives in a ``card.yaml`` next to the build script::
     repo: Nason/dol-visas-database
     file: dol_visas.duckdb
     pretty_name: DOL H-1B LCA & PERM Labor Certification Database
-    license: mit
+    license: other            # plus license_name / license_link for public-domain sources
     tags: [immigration, h1b, perm]
     size_category: 1M<n<10M
     intro: |
@@ -44,6 +44,19 @@ class CardSpec:
     footer: str = ""
     title: str | None = None
     table_columns: list[str] = field(default_factory=lambda: ["description", "row_count", "column_count"])
+    # Hugging Face's card fields for licenses outside its list: ``license: other`` plus a
+    # name and link (e.g. public-domain -> the source agency's terms page)
+    license_name: str | None = None
+    license_link: str | None = None
+
+
+def _license_extra(spec: CardSpec) -> str:
+    out = ""
+    if spec.license_name:
+        out += f"license_name: {spec.license_name}\n"
+    if spec.license_link:
+        out += f"license_link: {spec.license_link}\n"
+    return out
 
 
 def load_card_spec(path: Path | str = "card.yaml") -> CardSpec:
@@ -75,7 +88,7 @@ def render_card(spec: CardSpec, db_path: Path | str, *, changelog_path: Path | s
     quick = spec.quick_start_sql.strip() or f"SELECT * FROM {spec.alias}._metadata;"
     card = f"""---
 license: {spec.license}
-task_categories:
+{_license_extra(spec)}task_categories:
   - tabular-classification
   - tabular-regression
 tags:

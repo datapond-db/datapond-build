@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datapond-build"
-version = "0.1.2"
+version = "0.1.3"
 description = "Shared build tooling for datapond databases: DuckDB session tuning, data dictionary, HuggingFace publishing, validation"
 readme = "README.md"
 license = "MIT"
