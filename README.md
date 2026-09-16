@@ -15,7 +15,7 @@ package holds one version of each.
 ## Install into a build repo
 
 ```bash
-uv add "datapond-build @ git+https://github.com/datapond-db/datapond-build@v0.1.3"
+uv add "datapond-build @ git+https://github.com/datapond-db/datapond-build@v0.1.4"
 ```
 
 ## Use

@@ -7,10 +7,10 @@
 - checks:   collect PASS/FAIL checks and turn them into an exit code
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.4"
 
 from datapond_build.checks import Checker
-from datapond_build.metadata import build_columns_table, ensure_metadata, export_dictionary
+from datapond_build.metadata import build_columns_table, ensure_metadata, export_dictionary, user_tables
 from datapond_build.session import connect
 
-__all__ = ["Checker", "build_columns_table", "connect", "ensure_metadata", "export_dictionary"]
+__all__ = ["Checker", "build_columns_table", "connect", "ensure_metadata", "export_dictionary", "user_tables"]
